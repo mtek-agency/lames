@@ -1,0 +1,59 @@
+services:
+  pocketbase:
+    build:
+      context: ./api
+    container_name: knife-pocketbase
+    restart: unless-stopped
+    environment:
+      - PB_ENCRYPTION_KEY=${PB_ENCRYPTION_KEY:-}
+      # Litestream (§7.3) : réplication désactivée tant que ces variables sont vides.
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}
+      - R2_BACKUP_BUCKET=${R2_BACKUP_BUCKET:-}
+      - R2_BACKUP_ACCESS_KEY_ID=${R2_BACKUP_ACCESS_KEY_ID:-}
+      - R2_BACKUP_SECRET_ACCESS_KEY=${R2_BACKUP_SECRET_ACCESS_KEY:-}
+    ports:
+      # Exposé en local uniquement pour le dev (admin UI + API).
+      # En prod, ce port ne doit PAS être publié : seul Traefik y accède via le réseau interne (§3.2 CDCF).
+      - "8090:8090"
+    volumes:
+      - pb_data:/pb/pb_data
+    networks:
+      - knife-internal
+
+  front:
+    build:
+      context: ./front
+      target: dev
+    container_name: knife-front
+    restart: unless-stopped
+    environment:
+      - NUXT_POCKETBASE_INTERNAL_URL=http://knife-pocketbase:8090
+      # http://localhost:8090/api/files == route de fichiers PocketBase native.
+      # En prod, pointera vers le domaine média R2 (§6.2 CDCF).
+      - NUXT_PUBLIC_MEDIA_BASE_URL=${NUXT_PUBLIC_MEDIA_BASE_URL:-http://localhost:8090/api/files}
+      # Fond de carte MapTiler (§8 Jalon 5) : sans clé, la carte affiche un
+      # message d'erreur explicite au lieu de planter.
+      - NUXT_PUBLIC_MAPTILER_KEY=${NUXT_PUBLIC_MAPTILER_KEY:-}
+      - NUXT_PUBLIC_MAPTILER_STYLE=${NUXT_PUBLIC_MAPTILER_STYLE:-streets-v2}
+    ports:
+      # 3000 est déjà pris sur l'hôte par un autre projet local -> 3001.
+      - "3001:3000"
+    volumes:
+      - ./front:/app
+      # Volumes nommés pour ne pas se faire écraser par le bind mount ci-dessus
+      # (binaires natifs linux du conteneur vs macOS/host).
+      - front_node_modules:/app/node_modules
+      - front_nuxt:/app/.nuxt
+    depends_on:
+      - pocketbase
+    networks:
+      - knife-internal
+
+networks:
+  knife-internal:
+    name: knife-internal
+
+volumes:
+  pb_data:
+  front_node_modules:
+  front_nuxt:

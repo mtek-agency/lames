@@ -1,0 +1,82 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+  --font-sans: 'Public Sans', sans-serif;
+  --font-serif: 'Fraunces', serif;
+
+  /* Cuivre — accent principal, palette atelier/forge (remplace le vert Nuxt du starter) */
+  --color-copper-50: #FBF3EC;
+  --color-copper-100: #F5E1CE;
+  --color-copper-200: #EAC29D;
+  --color-copper-300: #DEA173;
+  --color-copper-400: #CE8752;
+  --color-copper-500: #B87333;
+  --color-copper-600: #9C5D28;
+  --color-copper-700: #7D4A20;
+  --color-copper-800: #603919;
+  --color-copper-900: #452911;
+  --color-copper-950: #2A190A;
+}
+
+/* Fond papier crème plutôt que blanc clinique — le blanc pur écrase les
+   photos de lames et l'accent cuivre ; le crème donne un rendu "planche
+   d'inventaire" plus chaud. Scopé pour ne jamais interférer avec .dark. */
+:root:not(.dark) {
+  --ui-bg: #F7F2E6;
+}
+
+/* Transition de page (View Transitions API) : le crossfade par défaut du
+   navigateur est trop rapide/sec pour l'ambiance "catalogue papier" ; les
+   éléments nommés (photos, cf. view-transition-name dans les pages) héritent
+   aussi de ce timing pour que le morph de photo et le fondu du reste soient
+   synchronisés. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-group(*) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Carte MapLibre GL (§2.1/§8 Jalon 5) : clusters et points sont rendus en
+   canvas via des layers stylés directement en JS (KnifeMap.client.vue), pas
+   de DOM/CSS à cibler pour eux. On ne restyle ici que les contrôles natifs
+   (zoom, attribution), qui restent des éléments DOM classiques. */
+.knife-map .maplibregl-ctrl-group {
+  border-radius: 0;
+  box-shadow: none;
+  border: 1px solid var(--ui-border);
+}
+
+.knife-map .maplibregl-ctrl-group button {
+  background: var(--ui-bg);
+}
+
+.knife-map .maplibregl-ctrl-group button:hover {
+  background: var(--color-copper-500);
+}
+
+.knife-map .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(2);
+}
+
+.knife-map .maplibregl-ctrl-attrib {
+  border-radius: 0;
+  background: color-mix(in srgb, var(--ui-bg) 85%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+}
+
+/* Grain papier sur la carte elle-même, cohérent avec l'overlay global posé
+   dans app.vue — sans lui la carte a un rendu trop "propre"/numérique par
+   rapport au reste du site. z-index bas : passe sous les contrôles Leaflet. */
+.knife-map-grain {
+  z-index: 1;
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+  background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E');
+}

@@ -1,0 +1,5 @@
+.env
+api/pb_data/
+node_modules/
+.nuxt/
+.output/

@@ -1,0 +1,76 @@
+name: build-and-push
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - name: knife-pocketbase
+            context: ./api
+            target: ''
+          - name: knife-front
+            context: ./front
+            target: prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Lowercase image owner
+        id: owner
+        run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Tag immuable au SHA court sur chaque build, + semver sur tag Git,
+      # + `latest` flottant uniquement sur main (§3.1 CDCF : jamais `latest` seul).
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ steps.owner.outputs.value }}/${{ matrix.name }}
+          tags: |
+            type=sha,format=short
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          target: ${{ matrix.target }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # L'URL de webhook Dokploy embarque son propre token d'authentification ;
+      # elle ne doit jamais être committée en clair (secret dépôt requis).
+      - name: Trigger Dokploy deployment
+        run: curl -fsS -X POST "$DOKPLOY_WEBHOOK_URL"
+        env:
+          DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}

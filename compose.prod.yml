@@ -1,0 +1,50 @@
+services:
+  pocketbase:
+    build:
+      context: ./api
+    container_name: knife-pocketbase
+    restart: unless-stopped
+    environment:
+      - PB_ENCRYPTION_KEY=${PB_ENCRYPTION_KEY:?PB_ENCRYPTION_KEY is required}
+      # Litestream (§7.3) : à renseigner une fois les buckets R2 créés (Jalon 1,
+      # bloqué côté Cloudflare) ; sans elles PocketBase démarre sans réplication.
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}
+      - R2_BACKUP_BUCKET=${R2_BACKUP_BUCKET:-}
+      - R2_BACKUP_ACCESS_KEY_ID=${R2_BACKUP_ACCESS_KEY_ID:-}
+      - R2_BACKUP_SECRET_ACCESS_KEY=${R2_BACKUP_SECRET_ACCESS_KEY:-}
+    # Pas de port publié : en prod, seul Traefik atteint PocketBase via le
+    # réseau interne (§3.2 CDCF). PocketBase n'écoute sur aucune IP publique.
+    volumes:
+      - pb_data:/pb/pb_data
+    networks:
+      - knife-internal
+
+  front:
+    build:
+      context: ./front
+      target: prod
+    container_name: knife-front
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NUXT_POCKETBASE_INTERNAL_URL=http://knife-pocketbase:8090
+      - NUXT_PUBLIC_MEDIA_BASE_URL=${NUXT_PUBLIC_MEDIA_BASE_URL:?NUXT_PUBLIC_MEDIA_BASE_URL is required}
+      # Fond de carte MapTiler (§8 Jalon 5) : sans clé, la carte affiche un
+      # message d'erreur explicite au lieu de planter.
+      - NUXT_PUBLIC_MAPTILER_KEY=${NUXT_PUBLIC_MAPTILER_KEY:-}
+      - NUXT_PUBLIC_MAPTILER_STYLE=${NUXT_PUBLIC_MAPTILER_STYLE:-streets-v2}
+    ports:
+      # En prod réelle (Dokploy), c'est Traefik qui route vers ce port ;
+      # gardé publié ici pour pouvoir tester l'image prod en local.
+      - "3000:3000"
+    depends_on:
+      - pocketbase
+    networks:
+      - knife-internal
+
+networks:
+  knife-internal:
+    name: knife-internal
+
+volumes:
+  pb_data:
