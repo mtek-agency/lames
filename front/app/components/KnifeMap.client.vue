@@ -120,6 +120,15 @@ watch(mapEl, async (el) => {
     return
   }
 
+  // La page peut être montée pendant une View Transition (navigation SPA,
+  // cf. `experimental.viewTransition` dans nuxt.config.ts) : le conteneur
+  // existe déjà (watch(mapEl) s'est déclenché) mais sa taille lue à l'instant
+  // de la création du canvas WebGL peut ne pas correspondre à sa taille
+  // finale réelle. MapLibre ne se re-mesure alors jamais tout seul, et le
+  // canvas reste bloqué sur un viewport GL périmé : rien ne s'affiche, sans
+  // la moindre erreur. Un `resize()` différé d'une frame force la remesure.
+  requestAnimationFrame(() => map?.resize())
+
   map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
   map.addControl(new AttributionControl({ compact: true }))
 
