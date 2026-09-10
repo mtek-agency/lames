@@ -32,6 +32,7 @@ const emit = defineEmits<{
 const config = useRuntimeConfig()
 const mapEl = useTemplateRef('mapEl')
 const styleError = ref(false)
+const errorMessage = ref('Fond de carte indisponible : clé MapTiler manquante ou invalide.')
 
 let map: MapLibreMapType | null = null
 
@@ -100,12 +101,24 @@ watch(mapEl, async (el) => {
 
   if (!mapEl.value) return // le composant a pu être démonté pendant l'import
 
-  map = new MapLibreMap({
-    container: el,
-    style: `https://api.maptiler.com/maps/${config.public.maptilerStyle}/style.json?key=${config.public.maptilerKey}`,
-    scrollZoom: false,
-    attributionControl: false
-  })
+  // maplibre-gl v6 : le constructeur lance une `GPUInitializationError`
+  // *synchrone* si WebGL2 est indisponible (carte graphique désactivée, VM,
+  // etc.), au lieu de déclencher l'événement `error` géré plus bas — sans ce
+  // try/catch, la carte restait silencieusement vide, sans le message
+  // d'erreur prévu ni trace exploitable en console.
+  try {
+    map = new MapLibreMap({
+      container: el,
+      style: `https://api.maptiler.com/maps/${config.public.maptilerStyle}/style.json?key=${config.public.maptilerKey}`,
+      scrollZoom: false,
+      attributionControl: false
+    })
+  } catch (err) {
+    console.error('[KnifeMap] Échec d\'initialisation de MapLibre GL', err)
+    errorMessage.value = 'Fond de carte indisponible : rendu 3D (WebGL2) non supporté par ce navigateur.'
+    styleError.value = true
+    return
+  }
 
   map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
   map.addControl(new AttributionControl({ compact: true }))
@@ -230,7 +243,7 @@ onBeforeUnmount(() => {
       v-if="styleError"
       class="absolute inset-0 flex items-center justify-center bg-elevated text-muted text-sm text-center px-6"
     >
-      Fond de carte indisponible : clé MapTiler manquante ou invalide (<code>NUXT_PUBLIC_MAPTILER_KEY</code>).
+      {{ errorMessage }}
     </div>
   </div>
   <div
