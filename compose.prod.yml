@@ -32,10 +32,6 @@ services:
       # message d'erreur explicite au lieu de planter.
       - NUXT_PUBLIC_MAPTILER_KEY=${NUXT_PUBLIC_MAPTILER_KEY:-}
       - NUXT_PUBLIC_MAPTILER_STYLE=${NUXT_PUBLIC_MAPTILER_STYLE:-streets-v2}
-    ports:
-      # En prod réelle (Dokploy), c'est Traefik qui route vers ce port ;
-      # gardé publié ici pour pouvoir tester l'image prod en local.
-      - "3000:3000"
     depends_on:
       - pocketbase
     networks:
