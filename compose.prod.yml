@@ -3,6 +3,11 @@ services:
     # Image immuable publiée par la CI (SHA court ou semver) — jamais `latest`
     # seul en prod réelle, pour pouvoir rollback en changeant IMAGE_TAG (§3.1 CDCF).
     image: ghcr.io/mtek-agency/knife-pocketbase:${IMAGE_TAG:-latest}
+    # `docker compose up` ne re-pull jamais une image dont le tag existe déjà
+    # en local (Dokploy ne fait qu'un `up -d --build`, pas de `pull` explicite) :
+    # sans ça, un `IMAGE_TAG` flottant comme `latest` ne se met jamais à jour
+    # après le tout premier déploiement, quel que soit le nombre de redeploys.
+    pull_policy: always
     container_name: knife-pocketbase
     restart: unless-stopped
     environment:
@@ -22,6 +27,7 @@ services:
 
   front:
     image: ghcr.io/mtek-agency/knife-front:${IMAGE_TAG:-latest}
+    pull_policy: always
     container_name: knife-front
     restart: unless-stopped
     environment:
