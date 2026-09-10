@@ -39,7 +39,7 @@ const isCarteActive = computed(() => route.path.startsWith('/carte'))
         </NuxtLink>
       </template>
 
-      <template #right>
+      <template #default>
         <div class="flex items-center gap-10">
           <NuxtLink
             to="/"
@@ -55,7 +55,29 @@ const isCarteActive = computed(() => route.path.startsWith('/carte'))
           >
             Carte
           </NuxtLink>
-          <UColorModeButton class="ml-2" />
+        </div>
+      </template>
+
+      <template #right>
+        <UColorModeButton />
+      </template>
+
+      <template #body>
+        <div class="flex flex-col gap-4">
+          <NuxtLink
+            to="/"
+            class="text-base font-medium"
+            :class="isCouteauxActive ? 'text-primary' : 'text-muted'"
+          >
+            Couteaux
+          </NuxtLink>
+          <NuxtLink
+            to="/carte"
+            class="text-base font-medium"
+            :class="isCarteActive ? 'text-primary' : 'text-muted'"
+          >
+            Carte
+          </NuxtLink>
         </div>
       </template>
     </UHeader>
