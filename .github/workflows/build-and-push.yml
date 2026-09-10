@@ -71,6 +71,12 @@ jobs:
       # L'URL de webhook Dokploy embarque son propre token d'authentification ;
       # elle ne doit jamais être committée en clair (secret dépôt requis).
       - name: Trigger Dokploy deployment
-        run: curl -fsS -X POST "$DOKPLOY_WEBHOOK_URL"
+        # Dokploy compare la branche à celle configurée sur l'app avant de
+        # déployer ("Branch Not Match" sur un POST vide) : on lui envoie donc
+        # un payload façon push GitHub, avec le ref de la branche courante.
+        run: |
+          curl -fsS -X POST "$DOKPLOY_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"ref\": \"refs/heads/${GITHUB_REF_NAME}\"}"
         env:
           DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
