@@ -3,6 +3,11 @@ import type { PublicKnife } from '#shared/types/knife'
 // Enregistrement brut PocketBase (§4 CDCF) : inclut les champs privés.
 export interface KnifeRecord {
   id: string
+  // Renvoyé automatiquement par PocketBase sur chaque record. Le fichier est
+  // stocké sur R2 sous `<collectionId>/<recordId>/<filename>` (Collection.BaseFilesPath()
+  // utilise l'ID de la collection, jamais son nom) — utiliser `knives` en dur ici
+  // pointerait vers une clé S3 qui n'existe pas.
+  collectionId: string
   slug: string
   name: string
   maker: string
@@ -50,7 +55,7 @@ export function sanitizeKnife(record: KnifeRecord, mediaBaseUrl: string): Public
       : null,
     story: record.story,
     photos: (record.photos ?? []).map(
-      file => `${mediaBaseUrl}/knives/${record.id}/${file}`
+      file => `${mediaBaseUrl}/${record.collectionId}/${record.id}/${file}`
     )
   }
 }

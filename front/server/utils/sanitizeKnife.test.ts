@@ -5,6 +5,7 @@ const FORBIDDEN_FIELDS = ['purchase_price', 'estimated_value', 'acquisition_date
 
 const fullRecord: KnifeRecord = {
   id: 'rec123',
+  collectionId: 'col456',
   slug: 'laguiole-plein-manche-1892',
   name: 'Laguiole plein manche',
   maker: 'Forge de Laguiole',
@@ -57,8 +58,8 @@ describe('sanitizeKnife', () => {
     const result = sanitizeKnife(fullRecord, 'https://media.example.com')
 
     expect(result.photos).toEqual([
-      'https://media.example.com/knives/rec123/front.jpg',
-      'https://media.example.com/knives/rec123/back.jpg'
+      'https://media.example.com/col456/rec123/front.jpg',
+      'https://media.example.com/col456/rec123/back.jpg'
     ])
   })
 
