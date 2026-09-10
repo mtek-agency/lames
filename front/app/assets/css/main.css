@@ -26,6 +26,20 @@
   --ui-bg: #F7F2E6;
 }
 
+/* Équivalent sombre du fond papier crème : sans ça le dark mode retombe sur
+   le stone-900 générique de Nuxt UI, correct mais anonyme, qui casse la
+   continuité "atelier" avec le clair. Un café brûlé profond plutôt qu'un
+   gris chaud, façon établi vu de nuit. */
+.dark {
+  --ui-bg: #1B140F;
+  --ui-bg-muted: #211911;
+  --ui-bg-elevated: #261D14;
+  --ui-bg-accented: #2F2317;
+  --ui-border: #33281B;
+  --ui-border-muted: #2A2015;
+  --ui-border-accented: #43331F;
+}
+
 /* Transition de page (View Transitions API) : le crossfade par défaut du
    navigateur est trop rapide/sec pour l'ambiance "catalogue papier" ; les
    éléments nommés (photos, cf. view-transition-name dans les pages) héritent
@@ -71,9 +85,11 @@
   font-size: 0.6rem;
 }
 
-/* Grain papier sur la carte elle-même, cohérent avec l'overlay global posé
-   dans app.vue — sans lui la carte a un rendu trop "propre"/numérique par
-   rapport au reste du site. z-index bas : passe sous les contrôles Leaflet. */
+/* Grain papier sur la carte elle-même : seul endroit du site où cette
+   texture est appliquée (pas de calque global sur toute l'app) — la carte
+   MapLibre est le module le plus "numérique" visuellement, celui qui en a
+   le plus besoin pour rester dans l'ambiance papier. z-index bas : passe
+   sous les contrôles Leaflet. */
 .knife-map-grain {
   z-index: 1;
   opacity: 0.06;

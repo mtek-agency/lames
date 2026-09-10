@@ -47,15 +47,18 @@ func stripPhotosExif(e *core.RecordRequestEvent) error {
 	for _, f := range uploaded {
 		reader, err := f.Reader.Open()
 		if err != nil {
+			log.Printf("stripPhotosExif: open %q: %v", f.OriginalName, err)
 			return err
 		}
 
 		img, decodeErr := imaging.Decode(reader, imaging.AutoOrientation(true))
 		closeErr := reader.Close()
 		if decodeErr != nil {
+			log.Printf("stripPhotosExif: decode %q: %v", f.OriginalName, decodeErr)
 			return decodeErr
 		}
 		if closeErr != nil {
+			log.Printf("stripPhotosExif: close %q: %v", f.OriginalName, closeErr)
 			return closeErr
 		}
 
@@ -66,11 +69,13 @@ func stripPhotosExif(e *core.RecordRequestEvent) error {
 
 		var buf bytes.Buffer
 		if err := imaging.Encode(&buf, img, format, imaging.JPEGQuality(90)); err != nil {
+			log.Printf("stripPhotosExif: encode %q: %v", f.OriginalName, err)
 			return err
 		}
 
 		clean, err := filesystem.NewFileFromBytes(buf.Bytes(), f.OriginalName)
 		if err != nil {
+			log.Printf("stripPhotosExif: rebuild file %q: %v", f.OriginalName, err)
 			return err
 		}
 

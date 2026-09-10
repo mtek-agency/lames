@@ -58,21 +58,35 @@ function resetFilters() {
   selectedSteel.value = undefined
   selectedHandle.value = undefined
 }
+
+// Rotations/décalages dérivés de l'id plutôt qu'alternés sur l'index : évite
+// le motif "pair/impair" trop régulier d'une grille rangée à la main.
+function hash(seed: string) {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 10000
+  return h / 10000
+}
+
+function cardTilt(id: string) {
+  return `${(hash(`${id}-tilt`) * 5.2 - 2.6).toFixed(2)}deg`
+}
+
+function stampTilt(id: string) {
+  return `${(hash(`${id}-stamp`) * 6 - 3).toFixed(2)}deg`
+}
+
+function cardOffset(id: string) {
+  const options = ['pt-0', 'pt-4', 'pt-8']
+  return options[Math.floor(hash(`${id}-offset`) * options.length)]
+}
 </script>
 
 <template>
   <div>
-    <div class="relative overflow-hidden border-b border-default/50">
-      <p
-        class="pointer-events-none select-none absolute -top-6 -right-6 sm:-right-16 font-serif italic text-primary/10 text-[9rem] sm:text-[16rem] leading-none"
-        aria-hidden="true"
-      >
-        N°{{ knives.length }}
-      </p>
-
-      <div class="relative grid grid-cols-1 lg:grid-cols-12 gap-12 items-center max-w-[80rem] mx-auto px-4 py-16 sm:py-24">
-        <div class="lg:col-span-6 relative z-10">
-          <p class="font-mono text-xs uppercase tracking-[0.3em] text-primary mb-4">
+    <div class="border-b border-default/50">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center max-w-[80rem] mx-auto px-4 py-16 sm:py-24">
+        <div class="lg:col-span-6">
+          <p class="text-sm text-primary mb-4">
             Collection privée — {{ knives.length }} pièce{{ knives.length > 1 ? 's' : '' }}
           </p>
           <h1 class="font-serif text-5xl sm:text-7xl leading-[0.95] mb-6 text-highlighted">
@@ -90,20 +104,15 @@ function resetFilters() {
 
         <div
           v-if="featured"
-          class="lg:col-span-6 relative z-10"
+          class="lg:col-span-6"
         >
-          <div class="relative max-w-md mx-auto lg:ml-auto lg:mr-0 rotate-2 border-8 border-white shadow-2xl shadow-neutral-900/20">
-            <NuxtImg
-              :src="featured.photos[0]"
-              :alt="featured.name"
-              class="w-full aspect-4/5 object-cover"
-              width="600"
-              height="750"
-            />
-            <span class="absolute -bottom-4 -left-4 bg-primary text-inverted font-mono text-xs px-3 py-1.5 tracking-widest -rotate-2">
-              N° 01 — {{ featured.name }}
-            </span>
-          </div>
+          <NuxtImg
+            :src="featured.photos[0]"
+            :alt="featured.name"
+            class="w-full aspect-4/5 object-cover max-w-md mx-auto lg:ml-auto lg:mr-0 -rotate-[1.6deg] border-8 border-white shadow-2xl shadow-neutral-900/20"
+            width="600"
+            height="750"
+          />
         </div>
       </div>
     </div>
@@ -126,7 +135,7 @@ function resetFilters() {
               class="group inline-flex items-center gap-2.5 cursor-pointer shrink-0"
               @click="filtersOpen = !filtersOpen"
             >
-              <span class="inline-flex items-center gap-2 border border-default/70 group-hover:border-primary px-3 py-1.5 font-mono text-xs uppercase tracking-[0.2em] text-muted group-hover:text-primary transition-colors">
+              <span class="inline-flex items-center gap-2 border border-default/70 group-hover:border-primary px-3 py-1.5 text-sm text-muted group-hover:text-primary transition-colors">
                 <UIcon
                   name="i-lucide-archive"
                   class="size-3.5"
@@ -185,26 +194,54 @@ function resetFilters() {
           </UCollapsible>
         </div>
 
-        <p
+        <div
           v-if="status === 'pending'"
-          class="text-muted"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10"
         >
-          Chargement du catalogue…
-        </p>
+          <div
+            v-for="n in 6"
+            :key="n"
+            class="flex flex-col gap-3 pt-3"
+          >
+            <USkeleton class="aspect-4/3 w-full rounded-none" />
+            <USkeleton class="h-5 w-2/3 rounded-none" />
+            <USkeleton class="h-3 w-1/2 rounded-none" />
+            <div class="flex gap-1.5">
+              <USkeleton class="h-5 w-16 rounded-none" />
+              <USkeleton class="h-5 w-16 rounded-none" />
+            </div>
+          </div>
+        </div>
 
         <UAlert
           v-else-if="error"
           color="error"
           title="Impossible de charger le catalogue"
           :description="error.message"
+          class="rounded-none"
         />
 
-        <p
+        <div
           v-else-if="filteredKnives.length === 0"
-          class="text-muted"
+          class="flex flex-col items-center gap-3 border border-dashed border-default/50 py-16 text-center"
         >
-          Aucune pièce ne correspond à ces critères.
-        </p>
+          <UIcon
+            name="i-lucide-search-x"
+            class="size-8 text-muted"
+          />
+          <p class="text-muted">
+            Aucune pièce ne correspond à ces critères.
+          </p>
+          <UButton
+            v-if="activeFacetCount || search"
+            label="Réinitialiser les filtres"
+            variant="link"
+            color="neutral"
+            size="sm"
+            class="p-0"
+            @click="resetFilters"
+          />
+        </div>
 
         <div
           v-else
@@ -215,11 +252,12 @@ function resetFilters() {
             :id="`knife-${knife.id}`"
             :key="knife.id"
             :to="`/couteaux/${knife.slug}`"
-            class="group block pt-3 scroll-mt-24"
+            class="group block scroll-mt-24"
+            :class="cardOffset(knife.id)"
           >
             <div
-              class="relative transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.03]"
-              :class="index % 2 === 0 ? 'rotate-[-1.25deg]' : 'rotate-[1.25deg]'"
+              class="relative rotate-[var(--tilt)] transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.03]"
+              :style="{ '--tilt': cardTilt(knife.id) }"
             >
               <div
                 class="aspect-4/3 bg-elevated overflow-hidden border-[6px] border-white shadow-md transition-shadow duration-300 group-hover:shadow-xl"
@@ -245,8 +283,8 @@ function resetFilters() {
                 </div>
               </div>
               <span
-                class="absolute -top-2 -right-2 z-10 bg-primary text-inverted font-mono text-[0.65rem] px-2 py-1 tracking-widest shadow-sm"
-                :class="index % 2 === 0 ? 'rotate-3' : '-rotate-3'"
+                class="absolute -top-2 -right-2 z-10 bg-primary text-inverted font-mono text-[0.65rem] px-2 py-1 tracking-widest shadow-sm rotate-[var(--stamp-tilt)]"
+                :style="{ '--stamp-tilt': stampTilt(knife.id) }"
               >
                 N° {{ String(index + 1).padStart(2, '0') }}
               </span>
@@ -256,7 +294,7 @@ function resetFilters() {
               <h3 class="font-serif text-xl italic truncate">
                 {{ knife.name }}
               </h3>
-              <p class="font-mono text-xs uppercase tracking-wide text-muted truncate">
+              <p class="text-sm text-muted truncate">
                 {{ knife.maker }} · {{ knife.origin_city }}
               </p>
               <div class="flex flex-wrap gap-1.5 pt-1">
@@ -264,6 +302,7 @@ function resetFilters() {
                   :label="KNIFE_TYPE_LABELS[knife.type] ?? knife.type"
                   variant="subtle"
                   size="sm"
+                  class="rounded-none"
                 />
                 <UBadge
                   v-if="knife.mechanism"
@@ -271,12 +310,14 @@ function resetFilters() {
                   variant="subtle"
                   color="neutral"
                   size="sm"
+                  class="rounded-none"
                 />
                 <UBadge
                   :label="knife.blade_steel"
                   variant="subtle"
                   color="neutral"
                   size="sm"
+                  class="rounded-none"
                 />
               </div>
             </div>

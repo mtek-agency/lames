@@ -16,7 +16,7 @@ function toggle(value: string) {
     v-if="options.length"
     class="flex flex-wrap items-center gap-2"
   >
-    <span class="font-mono text-[0.65rem] uppercase tracking-[0.15em] text-muted mr-1">
+    <span class="text-xs text-muted mr-1">
       {{ label }}
     </span>
     <button

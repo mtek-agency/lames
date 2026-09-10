@@ -42,7 +42,7 @@ onMounted(() => {
   <div>
     <div class="border-b border-default/50 px-4 py-12">
       <div class="max-w-[80rem] mx-auto">
-        <p class="font-mono text-xs uppercase tracking-[0.3em] text-primary mb-4">
+        <p class="text-sm text-primary mb-4">
           Carte des origines
         </p>
         <h1 class="font-serif text-4xl sm:text-5xl leading-[0.95]">
@@ -55,12 +55,10 @@ onMounted(() => {
       </div>
     </div>
 
-    <div
+    <USkeleton
       v-if="status === 'pending'"
-      class="px-4 py-12 text-muted"
-    >
-      Chargement de la carte…
-    </div>
+      class="w-full h-[80vh] rounded-none"
+    />
 
     <div
       v-else-if="error"
@@ -70,6 +68,7 @@ onMounted(() => {
         color="error"
         title="Impossible de charger la carte"
         :description="error.message"
+        class="rounded-none"
       />
     </div>
 
@@ -116,7 +115,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <p class="font-mono text-xs uppercase tracking-[0.2em] text-primary">
+          <p class="text-sm text-primary">
             {{ selectedKnife.maker }} · {{ selectedKnife.origin_city }}
           </p>
 
@@ -125,6 +124,7 @@ onMounted(() => {
               :label="KNIFE_TYPE_LABELS[selectedKnife.type] ?? selectedKnife.type"
               variant="subtle"
               size="sm"
+              class="rounded-none"
             />
             <UBadge
               v-if="selectedKnife.mechanism"
@@ -132,12 +132,14 @@ onMounted(() => {
               variant="subtle"
               color="neutral"
               size="sm"
+              class="rounded-none"
             />
             <UBadge
               :label="selectedKnife.blade_steel"
               variant="subtle"
               color="neutral"
               size="sm"
+              class="rounded-none"
             />
           </div>
 
@@ -146,6 +148,7 @@ onMounted(() => {
             label="Voir la fiche complète"
             trailing-icon="i-lucide-arrow-right"
             block
+            class="rounded-none"
           />
         </div>
       </template>

@@ -4,7 +4,8 @@ useHead({
     { name: 'viewport', content: 'width=device-width, initial-scale=1' }
   ],
   link: [
-    { rel: 'icon', href: '/favicon.ico' }
+    { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+    { rel: 'shortcut icon', href: '/favicon.ico' }
   ],
   htmlAttrs: {
     lang: 'fr'
@@ -28,11 +29,6 @@ const isCarteActive = computed(() => route.path.startsWith('/carte'))
 
 <template>
   <UApp>
-    <div
-      class="fixed inset-0 z-[100] pointer-events-none opacity-[0.05] mix-blend-multiply dark:opacity-[0.035] dark:mix-blend-overlay"
-      style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E')"
-    />
-
     <UHeader :ui="{ root: 'border-default/50' }">
       <template #left>
         <NuxtLink
@@ -47,14 +43,14 @@ const isCarteActive = computed(() => route.path.startsWith('/carte'))
         <div class="flex items-center gap-10">
           <NuxtLink
             to="/"
-            class="font-mono text-xs uppercase tracking-[0.2em] pb-1 border-b transition-colors"
+            class="text-sm font-medium pb-1 border-b transition-colors"
             :class="isCouteauxActive ? 'text-primary border-primary' : 'text-muted border-transparent hover:text-primary'"
           >
             Couteaux
           </NuxtLink>
           <NuxtLink
             to="/carte"
-            class="font-mono text-xs uppercase tracking-[0.2em] pb-1 border-b transition-colors"
+            class="text-sm font-medium pb-1 border-b transition-colors"
             :class="isCarteActive ? 'text-primary border-primary' : 'text-muted border-transparent hover:text-primary'"
           >
             Carte
@@ -82,7 +78,7 @@ const isCarteActive = computed(() => route.path.startsWith('/carte'))
           href="https://matteo-bonneval.fr"
           target="_blank"
           rel="noopener"
-          class="font-mono text-xs uppercase tracking-[0.2em] text-muted hover:text-primary transition-colors"
+          class="text-sm text-muted hover:text-primary transition-colors"
         >
           matteo-bonneval.fr
         </a>

@@ -27,6 +27,21 @@ const specs = computed(() => [
   { label: 'Poids', value: knife.value.weight ? `${knife.value.weight} g` : null }
 ].filter(spec => spec.value))
 
+const lightboxOpen = ref(false)
+const lightboxIndex = ref(0)
+const activeLightboxIndex = ref(0)
+const lightboxCarousel = useTemplateRef('lightboxCarousel')
+
+function openLightbox(index: number) {
+  lightboxIndex.value = index
+  activeLightboxIndex.value = index
+  lightboxOpen.value = true
+}
+
+function goToLightboxSlide(index: number) {
+  lightboxCarousel.value?.emblaApi?.scrollTo(index)
+}
+
 const knifeLocation = computed(() => {
   const coordinates = knife.value.coordinates
   return coordinates ? [{ ...knife.value, coordinates }] : []
@@ -52,7 +67,7 @@ useSeoMeta({
   <UPageSection>
     <NuxtLink
       :to="backTo"
-      class="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted hover:text-primary transition-colors mb-8"
+      class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition-colors mb-8"
     >
       <UIcon
         name="i-lucide-arrow-left"
@@ -66,22 +81,42 @@ useSeoMeta({
         class="relative"
         :style="{ viewTransitionName: `knife-photo-${knife.id}` }"
       >
-        <UCarousel
-          v-if="knife.photos.length"
-          v-slot="{ item }"
-          :items="knife.photos"
-          arrows
-          dots
-          class="border border-default/50 overflow-hidden"
-        >
-          <NuxtImg
-            :src="item"
-            :alt="knife.name"
-            class="w-full aspect-4/3 object-cover"
-            width="800"
-            height="600"
-          />
-        </UCarousel>
+        <template v-if="knife.photos.length">
+          <button
+            type="button"
+            class="block w-full border border-default/50 overflow-hidden cursor-zoom-in"
+            @click="openLightbox(0)"
+          >
+            <NuxtImg
+              :src="knife.photos[0]"
+              :alt="knife.name"
+              class="w-full aspect-4/3 object-cover"
+              width="800"
+              height="600"
+            />
+          </button>
+
+          <div
+            v-if="knife.photos.length > 1"
+            class="flex gap-2 mt-3 overflow-x-auto"
+          >
+            <button
+              v-for="(photo, index) in knife.photos"
+              :key="photo"
+              type="button"
+              class="shrink-0 w-20 aspect-4/3 border border-default/50 overflow-hidden hover:opacity-80 transition-opacity cursor-zoom-in"
+              @click="openLightbox(index)"
+            >
+              <NuxtImg
+                :src="photo"
+                :alt="`${knife.name} — photo ${index + 1}`"
+                class="w-full h-full object-cover"
+                width="160"
+                height="120"
+              />
+            </button>
+          </div>
+        </template>
         <div
           v-else
           class="aspect-4/3 bg-elevated border border-default/50 flex items-center justify-center text-muted"
@@ -95,7 +130,7 @@ useSeoMeta({
 
       <div class="flex flex-col gap-8">
         <div>
-          <p class="font-mono text-xs uppercase tracking-[0.2em] text-primary mb-2">
+          <p class="text-sm text-primary mb-2">
             {{ knife.maker }} · {{ knife.origin_city }}
           </p>
           <h1 class="font-serif text-4xl sm:text-5xl italic leading-tight">
@@ -148,5 +183,60 @@ useSeoMeta({
         </div>
       </div>
     </div>
+
+    <UModal
+      v-if="knife.photos.length"
+      v-model:open="lightboxOpen"
+      fullscreen
+      :close="{ color: 'neutral', variant: 'solid', class: 'bg-white text-black hover:bg-white/90 z-10' }"
+      :ui="{ content: 'bg-black/70 divide-y-0', body: 'flex flex-col items-center justify-center gap-4 p-0 sm:p-0' }"
+    >
+      <template #body>
+        <UCarousel
+          :key="lightboxIndex"
+          ref="lightboxCarousel"
+          v-slot="{ item }"
+          :items="knife.photos"
+          :start-index="lightboxIndex"
+          arrows
+          loop
+          :prev="{ color: 'neutral', variant: 'solid', class: 'bg-white text-black hover:bg-white/90' }"
+          :next="{ color: 'neutral', variant: 'solid', class: 'bg-white text-black hover:bg-white/90' }"
+          :ui="{ prev: 'sm:start-4', next: 'sm:end-4' }"
+          class="w-full"
+          @select="activeLightboxIndex = $event"
+        >
+          <NuxtImg
+            :src="item"
+            :alt="knife.name"
+            class="w-full h-[70vh] object-contain"
+            width="1600"
+            height="1200"
+          />
+        </UCarousel>
+
+        <div
+          v-if="knife.photos.length > 1"
+          class="flex gap-2 overflow-x-auto px-4 pb-4"
+        >
+          <button
+            v-for="(photo, index) in knife.photos"
+            :key="photo"
+            type="button"
+            class="shrink-0 w-16 aspect-4/3 border overflow-hidden transition-opacity"
+            :class="index === activeLightboxIndex ? 'border-white opacity-100' : 'border-white/30 opacity-50 hover:opacity-80'"
+            @click="goToLightboxSlide(index)"
+          >
+            <NuxtImg
+              :src="photo"
+              :alt="`${knife.name} — photo ${index + 1}`"
+              class="w-full h-full object-cover"
+              width="128"
+              height="96"
+            />
+          </button>
+        </div>
+      </template>
+    </UModal>
   </UPageSection>
 </template>
