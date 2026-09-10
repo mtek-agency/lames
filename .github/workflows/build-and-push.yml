@@ -68,15 +68,21 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      # L'URL de webhook Dokploy embarque son propre token d'authentification ;
-      # elle ne doit jamais être committée en clair (secret dépôt requis).
       - name: Trigger Dokploy deployment
-        # Dokploy compare la branche à celle configurée sur l'app avant de
-        # déployer ("Branch Not Match" sur un POST vide) : on lui envoie donc
-        # un payload façon push GitHub, avec le ref de la branche courante.
-        run: |
-          curl -fsS -X POST "$DOKPLOY_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{\"ref\": \"refs/heads/${GITHUB_REF_NAME}\"}"
         env:
-          DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          TITLE=$(printf '%s' "$COMMIT_MESSAGE" | head -n1)
+          DESCRIPTION=$(printf '%s' "$COMMIT_MESSAGE" | tail -n +2)
+          PAYLOAD=$(jq -n \
+            --arg composeId "$DOKPLOY_COMPOSE_ID" \
+            --arg title "$TITLE" \
+            --arg description "$DESCRIPTION" \
+            '{composeId: $composeId, title: $title, description: $description}')
+          curl -fsS -X POST "https://dokploy.matteo-bonneval.fr/api/compose.deploy" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: $DOKPLOY_API_KEY" \
+            -d "$PAYLOAD"
