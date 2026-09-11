@@ -1,3 +1,6 @@
+import { fileURLToPath } from 'node:url'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   modules: [
@@ -58,15 +61,33 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2026-06-30',
 
-  // MapLibre GL charge un web worker interne pour décoder les tuiles
-  // vectorielles ; le pré-bundling esbuild de Vite casse cette référence
-  // (warning "maplibre-gl-worker.mjs does not exist"), ce qui fait que les
-  // tuiles arrivent bien mais ne sont jamais décodées/dessinées, sans erreur
-  // visible. On exclut le paquet du dep optimizer pour le servir tel quel.
+  // MapLibre GL calcule l'URL de son web worker au runtime, en concaténant
+  // une chaîne à partir de `import.meta.url` du chunk courant — pas via un
+  // `new URL('./worker.js', import.meta.url)` littéral que les bundlers
+  // savent réécrire. Résultat :
+  // - en dev, `optimizeDeps.exclude` garde le module servi tel quel depuis
+  //   node_modules, où `maplibre-gl-worker.mjs` existe bien à côté ;
+  // - en build de prod, Rollup ne voit jamais cette référence dynamique et
+  //   n'émet donc pas ce fichier dans `_nuxt/` : le worker 404 silencieusement,
+  //   les tuiles arrivent (200) mais ne sont jamais décodées/dessinées, sans
+  //   la moindre erreur JS (échec d'un Worker, pas une exception classique).
+  //   `viteStaticCopy` copie le fichier du package vers `_nuxt/` au build
+  //   pour que cette URL construite au runtime pointe vers un fichier réel.
   vite: {
     optimizeDeps: {
       exclude: ['maplibre-gl']
-    }
+    },
+    plugins: [
+      viteStaticCopy({
+        targets: [
+          {
+            src: fileURLToPath(new URL('./node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url)),
+            dest: '_nuxt',
+            rename: { stripBase: true }
+          }
+        ]
+      })
+    ]
   },
 
   eslint: {
