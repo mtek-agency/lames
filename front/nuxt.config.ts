@@ -61,18 +61,19 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2026-06-30',
 
-  // MapLibre GL calcule l'URL de son web worker au runtime, en concaténant
-  // une chaîne à partir de `import.meta.url` du chunk courant — pas via un
-  // `new URL('./worker.js', import.meta.url)` littéral que les bundlers
-  // savent réécrire. Résultat :
-  // - en dev, `optimizeDeps.exclude` garde le module servi tel quel depuis
-  //   node_modules, où `maplibre-gl-worker.mjs` existe bien à côté ;
-  // - en build de prod, Rollup ne voit jamais cette référence dynamique et
-  //   n'émet donc pas ce fichier dans `_nuxt/` : le worker 404 silencieusement,
-  //   les tuiles arrivent (200) mais ne sont jamais décodées/dessinées, sans
-  //   la moindre erreur JS (échec d'un Worker, pas une exception classique).
-  //   `viteStaticCopy` copie le fichier du package vers `_nuxt/` au build
-  //   pour que cette URL construite au runtime pointe vers un fichier réel.
+  // MapLibre GL, chargé via `await import('maplibre-gl')` (dynamique, cf.
+  // KnifeMap.client.vue), n'est pas inliné par Rollup en build de prod : ses
+  // fichiers dist gardent leurs imports relatifs internes tels quels
+  // (`maplibre-gl.mjs` → `./maplibre-gl-shared.mjs`, et le worker interne de
+  // décodage des tuiles vectorielles → `./maplibre-gl-worker.mjs`, qui
+  // importe lui aussi `./maplibre-gl-shared.mjs`). Rollup n'émet donc aucun
+  // de ces deux fichiers dans `_nuxt/` : ils 404 silencieusement au runtime.
+  // Les tuiles arrivent (200) mais ne sont jamais décodées/dessinées, sans
+  // la moindre erreur JS exploitable (échec de chargement de module/Worker,
+  // pas une exception classique). En dev, `optimizeDeps.exclude` suffit car
+  // Vite sert alors le module tel quel depuis node_modules, où ces fichiers
+  // existent réellement côte à côte. `viteStaticCopy` reproduit ça en prod
+  // en copiant les deux fichiers vers `_nuxt/`.
   vite: {
     optimizeDeps: {
       exclude: ['maplibre-gl']
@@ -82,6 +83,11 @@ export default defineNuxtConfig({
         targets: [
           {
             src: fileURLToPath(new URL('./node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url)),
+            dest: '_nuxt',
+            rename: { stripBase: true }
+          },
+          {
+            src: fileURLToPath(new URL('./node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs', import.meta.url)),
             dest: '_nuxt',
             rename: { stripBase: true }
           }
