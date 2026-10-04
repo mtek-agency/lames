@@ -16,14 +16,15 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
-    // Réseau interne Docker uniquement (§3.2 CDCF) : jamais exposé au client.
-    pocketbaseInternalUrl: 'http://knife-pocketbase:8090',
-    public: {
-      mediaBaseUrl: ''
+    // API Studio : adresse du serveur (sans /api/v1) et slug du site. Serveur uniquement :
+    // le navigateur n'appelle jamais l'API, il passe par les routes Nitro de server/api/.
+    studio: {
+      apiUrl: 'http://localhost:8080',
+      site: 'couteaux'
     }
   },
 
-  // Pas de prerender sur '/' : le catalogue est piloté par PocketBase (contenu
+  // Pas de prerender sur '/' : le catalogue est piloté par l'API Studio (contenu
   // mis à jour par l'admin), pas un contenu statique figé au build.
 
   // Fondu entre les pages (rouleau/liste → fiche) via la View Transitions API.
@@ -72,17 +73,17 @@ export default defineNuxtConfig({
     // CDCF ; à basculer vers le provider `cloudflare` si le CPU du VPS en souffre.
     format: ['webp'],
     // Autorise IPX (qui s'exécute côté serveur, dans le conteneur) à aller
-    // chercher/optimiser les photos sur le domaine média public (R2 en prod).
-    // Exclu en dev local : `localhost` désigne l'hôte pour le navigateur mais
-    // pas pour le conteneur, IPX ne pourrait pas résoudre l'URL lui-même ;
-    // NuxtImg sert alors l'original brut, sans optimisation WebP.
+    // chercher/optimiser les photos sur le domaine média public de l'API Studio
+    // (MEDIA_PUBLIC_URL, lu à la construction). Exclu en dev local : `localhost`
+    // désigne l'hôte pour le navigateur mais pas pour le conteneur, IPX ne pourrait
+    // pas résoudre l'URL lui-même ; NuxtImg sert alors l'original brut.
     domains: mediaBaseDomains()
   }
 })
 
 function mediaBaseDomains(): string[] {
   try {
-    const url = new URL(process.env.NUXT_PUBLIC_MEDIA_BASE_URL || 'http://localhost:8090')
+    const url = new URL(process.env.MEDIA_PUBLIC_URL || 'http://localhost:7070')
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return []
     return [url.host]
   } catch {

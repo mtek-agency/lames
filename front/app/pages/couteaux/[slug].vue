@@ -17,6 +17,11 @@ const prev = computed(() => data.value!.prev)
 const next = computed(() => data.value!.next)
 const total = computed(() => data.value!.total)
 
+// Une vue par ouverture de fiche, comptée côté navigateur (le rendu serveur et les robots n'en comptent pas).
+onMounted(() => {
+  $fetch(`/api/knives/${slug}/views`, { method: 'POST' }).catch(() => {})
+})
+
 useHead({
   bodyAttrs: { class: 'bg-paper text-ink' },
   meta: [{ name: 'theme-color', content: '#F2F2F2' }]

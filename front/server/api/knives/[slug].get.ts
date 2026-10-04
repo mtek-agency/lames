@@ -1,31 +1,18 @@
-import { fetchNumberedKnives } from '../../utils/knives'
-import { sanitizeKnife, toNeighbour } from '../../utils/sanitizeKnife'
-
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
   if (!slug) {
     throw createError({ statusCode: 400, statusMessage: 'Missing slug' })
   }
 
-  const config = useRuntimeConfig(event)
-  const knives = await fetchNumberedKnives(event)
-  const index = knives.findIndex(knife => knife.record.slug === slug)
-
-  if (index === -1) {
-    throw createError({ statusCode: 404, statusMessage: 'Knife not found' })
-  }
-
-  // Navigation circulaire : la dernière pièce mène à la première, pour
-  // parcourir toute la collection depuis n'importe quelle fiche.
-  const total = knives.length
-  const prev = total > 1 ? knives[(index - 1 + total) % total]! : null
-  const next = total > 1 ? knives[(index + 1) % total]! : null
+  // L'API renvoie la pièce, son rang dans la collection et ses voisines (navigation circulaire :
+  // la dernière pièce mène à la première).
+  const { data, meta } = await fetchKnife(event, slug)
 
   return {
     success: true,
-    data: sanitizeKnife(knives[index]!, config.public.mediaBaseUrl),
-    prev: prev && toNeighbour(prev, config.public.mediaBaseUrl),
-    next: next && toNeighbour(next, config.public.mediaBaseUrl),
-    total
+    data: toKnife(data),
+    prev: toNeighbour(meta.prev),
+    next: toNeighbour(meta.next),
+    total: meta.total
   }
 })
