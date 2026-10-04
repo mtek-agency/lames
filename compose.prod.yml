@@ -1,47 +1,27 @@
+# Production (Dokploy) : l'image est construite et publiée par la CI, ce fichier ne fait que la lancer.
+# Le back-end est l'API Studio (autre service Dokploy) ; les photos sont servies par son domaine média.
 services:
-  pocketbase:
-    # Image immuable publiée par la CI (SHA court ou semver) — jamais `latest`
-    # seul en prod réelle, pour pouvoir rollback en changeant IMAGE_TAG (§3.1 CDCF).
-    image: ghcr.io/mtek-agency/knife-pocketbase:${IMAGE_TAG:-latest}
-    # `docker compose up` ne re-pull jamais une image dont le tag existe déjà
-    # en local (Dokploy ne fait qu'un `up -d --build`, pas de `pull` explicite) :
-    # sans ça, un `IMAGE_TAG` flottant comme `latest` ne se met jamais à jour
-    # après le tout premier déploiement, quel que soit le nombre de redeploys.
-    pull_policy: always
-    container_name: knife-pocketbase
-    restart: unless-stopped
-    environment:
-      - PB_ENCRYPTION_KEY=${PB_ENCRYPTION_KEY:?PB_ENCRYPTION_KEY is required}
-      # Litestream (§7.3) : à renseigner une fois les buckets R2 créés (Jalon 1,
-      # bloqué côté Cloudflare) ; sans elles PocketBase démarre sans réplication.
-      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}
-      - R2_BACKUP_BUCKET=${R2_BACKUP_BUCKET:-}
-      - R2_BACKUP_ACCESS_KEY_ID=${R2_BACKUP_ACCESS_KEY_ID:-}
-      - R2_BACKUP_SECRET_ACCESS_KEY=${R2_BACKUP_SECRET_ACCESS_KEY:-}
-    # Pas de port publié : en prod, seul Traefik atteint PocketBase via le
-    # réseau interne (§3.2 CDCF). PocketBase n'écoute sur aucune IP publique.
-    volumes:
-      - pb_data:/pb/pb_data
-    networks:
-      - knife-internal
-
   front:
+    # Étiquette immuable (SHA court ou semver) : pour revenir en arrière, changer IMAGE_TAG et redéployer.
     image: ghcr.io/mtek-agency/knife-front:${IMAGE_TAG:-latest}
+    # `docker compose up` ne re-pull jamais une image dont le tag existe déjà en local (Dokploy ne fait
+    # qu'un `up -d`, pas de `pull` explicite) : sans ça, `latest` ne se met jamais à jour après le
+    # premier déploiement.
     pull_policy: always
     container_name: knife-front
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - NUXT_POCKETBASE_INTERNAL_URL=http://knife-pocketbase:8090
-      - NUXT_PUBLIC_MEDIA_BASE_URL=${NUXT_PUBLIC_MEDIA_BASE_URL:?NUXT_PUBLIC_MEDIA_BASE_URL is required}
-    depends_on:
-      - pocketbase
+      - NUXT_STUDIO_API_URL=${NUXT_STUDIO_API_URL:?NUXT_STUDIO_API_URL is required}
+      - NUXT_STUDIO_SITE=${NUXT_STUDIO_SITE:-couteaux}
+    # Pas de port publié : Traefik (Dokploy) atteint le conteneur par le réseau Docker (domaine dans Dokploy).
+    expose:
+      - "3000"
     networks:
-      - knife-internal
+      - dokploy-network
 
+# Réseau créé par Dokploy : le front y joint l'API Studio directement (NUXT_STUDIO_API_URL=http://studio-api:8080),
+# pour que l'IP du visiteur ne se perde pas (voir TRUSTED_PROXIES côté API).
 networks:
-  knife-internal:
-    name: knife-internal
-
-volumes:
-  pb_data:
+  dokploy-network:
+    external: true

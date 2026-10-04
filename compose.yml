@@ -1,25 +1,7 @@
+# Développement : le front dans un conteneur, avec rechargement à chaud.
+# Le back-end est l'API Studio (dépôt `studio`, `docker compose up -d` + `make run` dans api/),
+# jointe depuis le conteneur par l'hôte. Le site `couteaux` doit exister (migration 00012).
 services:
-  pocketbase:
-    build:
-      context: ./api
-    container_name: knife-pocketbase
-    restart: unless-stopped
-    environment:
-      - PB_ENCRYPTION_KEY=${PB_ENCRYPTION_KEY:-}
-      # Litestream (§7.3) : réplication désactivée tant que ces variables sont vides.
-      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}
-      - R2_BACKUP_BUCKET=${R2_BACKUP_BUCKET:-}
-      - R2_BACKUP_ACCESS_KEY_ID=${R2_BACKUP_ACCESS_KEY_ID:-}
-      - R2_BACKUP_SECRET_ACCESS_KEY=${R2_BACKUP_SECRET_ACCESS_KEY:-}
-    ports:
-      # Exposé en local uniquement pour le dev (admin UI + API).
-      # En prod, ce port ne doit PAS être publié : seul Traefik y accède via le réseau interne (§3.2 CDCF).
-      - "8090:8090"
-    volumes:
-      - pb_data:/pb/pb_data
-    networks:
-      - knife-internal
-
   front:
     build:
       context: ./front
@@ -27,10 +9,10 @@ services:
     container_name: knife-front
     restart: unless-stopped
     environment:
-      - NUXT_POCKETBASE_INTERNAL_URL=http://knife-pocketbase:8090
-      # http://localhost:8090/api/files == route de fichiers PocketBase native.
-      # En prod, pointera vers le domaine média R2 (§6.2 CDCF).
-      - NUXT_PUBLIC_MEDIA_BASE_URL=${NUXT_PUBLIC_MEDIA_BASE_URL:-http://localhost:8090/api/files}
+      - NUXT_STUDIO_API_URL=${NUXT_STUDIO_API_URL:-http://host.docker.internal:8080}
+      - NUXT_STUDIO_SITE=${NUXT_STUDIO_SITE:-couteaux}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       # 3000 est déjà pris sur l'hôte par un autre projet local -> 3001.
       - "3001:3000"
@@ -40,16 +22,7 @@ services:
       # (binaires natifs linux du conteneur vs macOS/host).
       - front_node_modules:/app/node_modules
       - front_nuxt:/app/.nuxt
-    depends_on:
-      - pocketbase
-    networks:
-      - knife-internal
-
-networks:
-  knife-internal:
-    name: knife-internal
 
 volumes:
-  pb_data:
   front_node_modules:
   front_nuxt:

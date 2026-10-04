@@ -16,9 +16,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: knife-pocketbase
-            context: ./api
-            target: ''
           - name: knife-front
             context: ./front
             target: prod
@@ -58,6 +55,9 @@ jobs:
         with:
           context: ${{ matrix.context }}
           target: ${{ matrix.target }}
+          # Domaine des photos (variable du dépôt, pas un secret) : autorisé pour l'optimisation d'images.
+          build-args: |
+            MEDIA_PUBLIC_URL=${{ vars.MEDIA_PUBLIC_URL }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -70,6 +70,7 @@ jobs:
     steps:
       - name: Trigger Dokploy deployment
         env:
+          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
           DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
@@ -81,7 +82,7 @@ jobs:
             --arg title "$TITLE" \
             --arg description "$DESCRIPTION" \
             '{composeId: $composeId, title: $title, description: $description}')
-          curl -fsS -X POST "https://dokploy.matteo-bonneval.fr/api/compose.deploy" \
+          curl -fsS -X POST "$DOKPLOY_URL/api/compose.deploy" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             -H "x-api-key: $DOKPLOY_API_KEY" \
