@@ -31,6 +31,9 @@ CMD ["pnpm", "run", "dev", "--host", "0.0.0.0"]
 # ---------------------------------------------------------------------------
 FROM deps AS build
 ENV NODE_ENV=production
+# Domaine public des photos (MEDIA_PUBLIC_URL de l'API Studio) : autorisé pour l'optimisation d'images, lu au build.
+ARG MEDIA_PUBLIC_URL
+ENV MEDIA_PUBLIC_URL=$MEDIA_PUBLIC_URL
 COPY . .
 RUN pnpm run build
 

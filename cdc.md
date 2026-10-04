@@ -2,6 +2,8 @@
 ## Projet : Vitrine & Inventaire Numérique de Collection de Couteaux
 **Version 5** — Refonte de la vitrine publique d'après la maquette `../design/design_site_collection_couteau.pen` (hors dépôt) : accueil en « rouleau » / liste, fiche éditoriale, nouveaux champs publics ; suppression de la carte interactive.
 
+**Version 6 — Le back-end n'est plus PocketBase.** Les pièces, les photos et les vues sont gérés par l'**API Studio** (dépôt `studio`, site `couteaux`) : base PostgreSQL, médias sur R2, administration dans l'admin Studio (écran « Couteaux »). Le front garde son rôle de BFF (`server/api/knives/*`), désormais un adaptateur mince vers l'API publique. PocketBase, Litestream, Cloudflare Access et les sections qui s'y rapportent (§3, §5, §6, §7) sont **abandonnés** et ne valent plus que comme historique ; les champs, les règles de numérotation, de confidentialité et de format décrits ici restent valables. Les photos sont des JPEG ou des PNG dont les métadonnées (EXIF, GPS) sont retirées à l'envoi. Il n'y a pas eu d'import des anciennes données (données de test).
+
 *Version 4 — Révision durcissant l'exposition publique de PocketBase (Cloudflare Access exhaustif + protection de l'IP d'origine), clarifiant le comportement réel de `@nuxt/image`, imposant un tagging d'images immuable pour le rollback, et formalisant la gestion des secrets.*
 
 ---

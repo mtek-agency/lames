@@ -3,7 +3,7 @@
 // Ce qu'affichent le rouleau et la liste : assez pour la légende, la ligne de
 // liste et l'aperçu, sans la galerie complète.
 export interface KnifeSummary {
-  id: string
+  id: number
   slug: string
   // N° d'inventaire ("N° 03") : saisi dans l'admin, sinon rang de création.
   number: number
