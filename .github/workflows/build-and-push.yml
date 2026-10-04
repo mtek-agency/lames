@@ -70,11 +70,15 @@ jobs:
     steps:
       - name: Trigger Dokploy deployment
         env:
-          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+          DOKPLOY_URL: ${{ vars.DOKPLOY_URL || secrets.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
           DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
+          # Échec clair si la configuration manque (sinon curl répond « No host part in the URL »).
+          for v in DOKPLOY_URL DOKPLOY_API_KEY DOKPLOY_COMPOSE_ID; do
+            [ -n "${!v}" ] || { echo "::error::$v est vide : à définir dans Settings > Secrets and variables > Actions (DOKPLOY_URL : variable, de la forme https://dokploy.exemple.fr)"; exit 1; }
+          done
           TITLE=$(printf '%s' "$COMMIT_MESSAGE" | head -n1)
           DESCRIPTION=$(printf '%s' "$COMMIT_MESSAGE" | tail -n +2)
           PAYLOAD=$(jq -n \
@@ -82,7 +86,7 @@ jobs:
             --arg title "$TITLE" \
             --arg description "$DESCRIPTION" \
             '{composeId: $composeId, title: $title, description: $description}')
-          curl -fsS -X POST "$DOKPLOY_URL/api/compose.deploy" \
+          curl -fsS -X POST "${DOKPLOY_URL%/}/api/compose.deploy" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             -H "x-api-key: $DOKPLOY_API_KEY" \
