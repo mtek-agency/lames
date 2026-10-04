@@ -1,5 +1,5 @@
-import PocketBase, { ClientResponseError } from 'pocketbase'
-import { sanitizeKnife, type KnifeRecord } from '../../utils/sanitizeKnife'
+import { fetchNumberedKnives } from '../../utils/knives'
+import { sanitizeKnife, toNeighbour } from '../../utils/sanitizeKnife'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -8,21 +8,24 @@ export default defineEventHandler(async (event) => {
   }
 
   const config = useRuntimeConfig(event)
-  const pb = new PocketBase(config.pocketbaseInternalUrl)
+  const knives = await fetchNumberedKnives(event)
+  const index = knives.findIndex(knife => knife.record.slug === slug)
 
-  try {
-    const record = await pb.collection('knives').getFirstListItem<KnifeRecord>(
-      pb.filter('slug = {:slug} && is_public = true', { slug })
-    )
+  if (index === -1) {
+    throw createError({ statusCode: 404, statusMessage: 'Knife not found' })
+  }
 
-    return {
-      success: true,
-      data: sanitizeKnife(record, config.public.mediaBaseUrl)
-    }
-  } catch (error) {
-    if (error instanceof ClientResponseError && error.status === 404) {
-      throw createError({ statusCode: 404, statusMessage: 'Knife not found' })
-    }
-    throw error
+  // Navigation circulaire : la dernière pièce mène à la première, pour
+  // parcourir toute la collection depuis n'importe quelle fiche.
+  const total = knives.length
+  const prev = total > 1 ? knives[(index - 1 + total) % total]! : null
+  const next = total > 1 ? knives[(index + 1) % total]! : null
+
+  return {
+    success: true,
+    data: sanitizeKnife(knives[index]!, config.public.mediaBaseUrl),
+    prev: prev && toNeighbour(prev, config.public.mediaBaseUrl),
+    next: next && toNeighbour(next, config.public.mediaBaseUrl),
+    total
   }
 })

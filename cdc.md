@@ -1,6 +1,8 @@
 # Cahier des Charges Techniques & Fonctionnelles (CDCF)
 ## Projet : Vitrine & Inventaire Numérique de Collection de Couteaux
-**Version 4** — Révision durcissant l'exposition publique de PocketBase (Cloudflare Access exhaustif + protection de l'IP d'origine), clarifiant le comportement réel de `@nuxt/image`, imposant un tagging d'images immuable pour le rollback, et formalisant la gestion des secrets.
+**Version 5** — Refonte de la vitrine publique d'après la maquette `../design/design_site_collection_couteau.pen` (hors dépôt) : accueil en « rouleau » / liste, fiche éditoriale, nouveaux champs publics ; suppression de la carte interactive.
+
+*Version 4 — Révision durcissant l'exposition publique de PocketBase (Cloudflare Access exhaustif + protection de l'IP d'origine), clarifiant le comportement réel de `@nuxt/image`, imposant un tagging d'images immuable pour le rollback, et formalisant la gestion des secrets.*
 
 ---
 
@@ -8,28 +10,32 @@
 
 Le projet consiste à concevoir une application web moderne servant à la fois :
 1. **D'inventaire personnel et sécurisé** : Permettre au collectionneur de recenser ses pièces, gérer ses fiches d'acquisition (prix d'achat, valeur estimée, lieu de trouvaille) et administrer son catalogue directement depuis un smartphone (bourses, ateliers, brocantes).
-2. **De vitrine publique / portfolio** : Exposer la collection aux passionnés et amateurs de coutellerie à travers une interface soignée, des fiches techniques détaillées, des galeries photos haute résolution et une carte interactive des origines des lames.
+2. **De vitrine publique / portfolio** : Exposer la collection aux passionnés et amateurs de coutellerie à travers une interface soignée, des fiches techniques détaillées, et des galeries photos haute résolution.
 
 ---
 
 ### 2. Spécifications Fonctionnelles
 
 #### 2.1. Module Vitrine Publique (Front-End)
-* **Page d'accueil & Catalogue :**
-  * Grille / Galerie responsive des couteaux (photos de couverture, nom, artisan, mécanisme, acier).
-  * Système de filtres par facettes : type (pliant, fixe, cuisine), mécanisme (cran forcé, liner lock, etc.), nuance d'acier, matière du manche.
-  * Moteur de recherche textuel (nom, coutelier, ville d'origine).
-  * Affichage des photos de la grille via miniatures optimisées WebP (§8.3) afin de réduire le poids des pages.
+Référence visuelle : maquette `../design/design_site_collection_couteau.pen` (hors dépôt) (écrans desktop 1440 px et mobile 390 px, design system). Fond nuit « acier damassé » pour l'accueil, fond papier pour les fiches. Polices Instrument Serif, Inter Tight et Cormorant Garamond, auto-hébergées via `@nuxt/fonts`.
+
+* **Accueil — Vue « Rouleau » (par défaut) :**
+  * Carrousel horizontal des pièces, triées par N° d'inventaire : glisser (souris, tactile, trackpad) ou flèches du clavier ; les cartes latérales rétrécissent, s'inclinent et s'effacent.
+  * Ouverture sur la dernière entrée ; légende de la carte centrale (nom, matériaux, longueur de lame, année) et progression (N° / total).
+* **Accueil — Vue « Liste » (bascule Rouleau / Liste, mémorisée dans l'URL `?vue=liste`) :**
+  * Tableau modèle / acier / manche / année avec vignette ; aperçu de la pièce survolée (photo, specs, lien vers la fiche) sur desktop.
+  * Filtres par catégorie (Classique, Montagne, Urbain) et « Édition limitée » ; tri par N° ou par année.
+  * Navigation clavier ↑ ↓ / ↵ sur desktop ; badges « Nouveau » (entrée de moins de 90 jours) et « Édition limitée » sur mobile.
+  * Miniatures optimisées WebP (§8.3).
 * **Fiche Détaillée d'une Pièce :**
-  * Galerie photos multi-vues (lame fermée, ouverte, détails guillochage/émouture).
-  * Fiche technique complète (dimensions, poids, émouture, finitions, dureté HRC).
-  * Récit & Histoire (anecdote de trouvaille, historique de l'artisan ou de la manufacture).
-  * Mini-carte de localisation de l'artisan ou de l'atelier de forge.
+  * Gabarit identique pour toutes les pièces.
+  * En-tête : visuel détouré de la pièce, specs clés, N° d'inventaire, pièces voisines, note du collectionneur (si renseignée).
+  * Deux photos légendées au maximum (visionneuse plein écran) : une grande, puis une seconde à côté de la fiche technique ; les photos suivantes ne sont pas affichées.
+  * Fiche technique complète (type, lame, longueurs, épaisseur, manche, mitres, poids, forgeron, année, état), précédée de l'encart éditorial s'il est renseigné.
+  * Pas de section Histoire (retirée pour garder des fiches courtes).
+  * Navigation pièce précédente / suivante (circulaire).
   * URL basée sur un slug lisible et unique (§8.2).
-* **Carte Interactive Globale :**
-  * Vue cartographique (Leaflet / OpenStreetMap ou tuiles CartoDB Positron).
-  * Marqueurs géographiques indiquant les lieux de fabrication / d'achat.
-  * Pop-up synthétique au clic redirigeant vers la fiche détaillée.
+* ~~**Carte Interactive Globale**~~ : supprimée lors de la refonte (absente de la maquette). Les champs `lat` / `lng` restent en base mais ne sont plus exposés.
 * **Confidentialité & Sécurité Publique :**
   * Masquage strict des données financières (prix d'achat, valeur estimée).
   * Localisation publique restreinte à la ville/région d'origine (aucun lieu de stockage personnel).
@@ -144,10 +150,24 @@ Aucun secret n'est commité dans le dépôt Git ni codé en dur dans les Dockerf
 | `blade_length` | Number | Non | Public | Longueur de la lame (mm) |
 | `weight` | Number | Non | Public | Poids net (g) |
 | `origin_city` | Text | Oui | Public | Ville / région de fabrication |
-| `lat` | Number | Non | Public | Latitude du lieu d'origine (artisan / forge) |
-| `lng` | Number | Non | Public | Longitude du lieu d'origine |
-| `story` | Text (Rich/MD) | Non | Public | Histoire, contexte de création ou d'achat |
-| `photos` | File (Multiple) | Non | Public | Fichiers photos stockés sur R2 (dépourvus d'EXIF) |
+| `lat` | Number | Non | Interne | Latitude du lieu d'origine — plus exposée depuis la suppression de la carte |
+| `lng` | Number | Non | Interne | Longitude du lieu d'origine — plus exposée depuis la suppression de la carte |
+| `story` | Text (Rich/MD) | Non | Interne | Histoire de la pièce — plus affichée ni exposée depuis la refonte (section Histoire retirée) |
+| `photos` | File (Multiple) | Non | Public | Fichiers photos stockés sur R2 (dépourvus d'EXIF) ; la première sert de couverture |
+| `inventory_number` | Number | Non | Public | N° d'inventaire (« N° 03 ») ; à défaut, rang de création |
+| `year` | Number | Non | Public | Année de fabrication |
+| `entry_year` | Number | Non | Public | Année d'entrée dans la collection (« Entrée en 2026 ») |
+| `category` | Select | Non | Public | `classique`, `montagne`, `urbain` (filtres de la liste) |
+| `limited_edition` | Bool | Non | Public | Édition limitée (filtre + badge) |
+| `bolster` | Text | Non | Public | Mitre(s) : « Laiton massif » |
+| `closed_length` | Number | Non | Public | Longueur fermé (mm) |
+| `blade_thickness` | Number | Non | Public | Épaisseur de lame (mm, décimales autorisées) |
+| `condition` | Text | Non | Public | État : « Neuf, jamais affûté » |
+| `collector_note` | Text | Non | Public | Citation courte affichée sous le visuel de la fiche |
+| `detail_heading` / `detail_text` | Text | Non | Public | Encart éditorial au milieu de la galerie |
+| `hero_image` | File (Single) | Non | Public | Visuel détouré (PNG transparent) de la fiche et des vignettes, dépourvu d'EXIF |
+| `photo_captions` | Text | Non | Public | Légendes des photos, une par ligne, dans l'ordre des photos |
+| `photos_note` | Text | Non | Public | Complément de la galerie : « photographiées à Lyon, 2026 » |
 | `purchase_price` | Number | Non | **PRIVÉ (Admin)** | Prix d'achat réel (€) |
 | `estimated_value` | Number | Non | **PRIVÉ (Admin)** | Estimation marchande (€) |
 | `acquisition_date`| Date | Non | **PRIVÉ (Admin)** | Date d'achat ou d'acquisition |
@@ -160,50 +180,13 @@ Aucun secret n'est commité dans le dépôt Git ni codé en dur dans les Dockerf
 
 Le serveur Nuxt 3 (Nitro) sert de passerelle d'assainissement entre le visiteur et PocketBase. Cette étanchéité applicative reste une protection complémentaire — elle ne dispense pas de l'isolation réseau et du verrouillage Cloudflare Access décrits au §3.2, qui protègent PocketBase lui-même.
 
-#### Route serveur : `server/api/knives/index.get.ts`
-```typescript
-import PocketBase from 'pocketbase'
+#### Routes serveur : `server/api/knives/index.get.ts` et `server/api/knives/[slug].get.ts`
 
-export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
-  // Connexion sur le réseau privé Docker de Dokploy
-  const pb = new PocketBase(config.pocketbaseInternalUrl)
-
-  // Récupération des pièces publiées
-  const records = await pb.collection('knives').getFullList({
-    filter: 'is_public = true',
-    sort: '-created',
-  })
-
-  // Whitelist stricte : aucun champ privé n'est renvoyé
-  const sanitizedKnives = records.map((knife) => ({
-    id: knife.id,
-    slug: knife.slug,
-    name: knife.name,
-    maker: knife.maker,
-    type: knife.type,
-    mechanism: knife.mechanism,
-    blade_steel: knife.blade_steel,
-    blade_finish: knife.blade_finish,
-    handle_material: knife.handle_material,
-    overall_length: knife.overall_length,
-    blade_length: knife.blade_length,
-    weight: knife.weight,
-    origin_city: knife.origin_city,
-    coordinates: knife.lat && knife.lng ? { lat: knife.lat, lng: knife.lng } : null,
-    story: knife.story,
-    // Les photos pointent vers le domaine média Cloudflare R2
-    photos: knife.photos.map((file: string) => 
-      `${config.public.mediaBaseUrl}/knives/${knife.id}/${file}`
-    ),
-  }))
-
-  return {
-    success: true,
-    data: sanitizedKnives,
-  }
-})
-```
+* PocketBase est interrogé sur le réseau interne avec une liste explicite de champs (`fields`, cf. `PUBLIC_RECORD_FIELDS` dans `server/utils/sanitizeKnife.ts`) : les champs privés ne quittent jamais PocketBase.
+* La whitelist de `sanitizeKnife` / `summarizeKnife` reste la barrière de référence : seuls les champs publics du §4 sont recopiés, les valeurs vides de PocketBase (`0`, `''`) sont ramenées à `undefined`.
+* `/api/knives` renvoie la liste résumée (rouleau, liste) triée par N° d'inventaire, plus le slug de la dernière entrée.
+* `/api/knives/[slug]` renvoie la fiche complète, les pièces voisines (navigation circulaire) et le nombre total de pièces publiées.
+* Les médias pointent vers le domaine R2 : `${mediaBaseUrl}/${collectionId}/${recordId}/${fichier}`.
 
 > **Test d'étanchéité (Jalon 3) :** test automatisé vérifiant que `Object.keys()` de chaque objet retourné ne contient jamais `purchase_price`, `estimated_value`, `acquisition_date` ou `private_notes`.
 
@@ -268,10 +251,9 @@ L'administrateur pouvant ajouter des photos directement depuis son smartphone vi
   * Écriture d'un test automatisé validant qu'aucun champ financier/privé n'est exposé.
 * [ ] **Jalon 4 - Vitrine Publique & Médias :**
   * Décision documentée sur le provider `@nuxt/image` (IPX local vs Cloudflare Image Resizing) et dimensionnement en conséquence.
-  * Développement de la grille avec filtres à facettes (acier, manche, mécanisme).
-  * Fiches détaillées avec carrousel et métadonnées OpenGraph / SEO.
-* [ ] **Jalon 5 - Module Cartographique & Recette Finale :**
-  * Implémentation de la carte Leaflet avec clustering des forges/artisans.
+  * Accueil « Rouleau » / « Liste » avec filtres et tri, d'après la maquette.
+  * Fiches détaillées au gabarit unique (visuel détouré, grande photo, photo + fiche technique) et métadonnées OpenGraph / SEO.
+* [ ] **Jalon 5 - Recette Finale :**
   * Validation terrain de l'administration mobile via smartphone (test réel derrière Cloudflare Access).
   * Test complet de restauration de sauvegarde SQLite à blanc depuis le bucket R2.
   * Audit final : vérification qu'aucune connexion directe à l'IP du VPS n'est possible, que la policy Access couvre bien tous les endpoints PocketBase, et qu'aucune photo publiée ne contient d'EXIF résiduel.

@@ -31,10 +31,6 @@ services:
       # http://localhost:8090/api/files == route de fichiers PocketBase native.
       # En prod, pointera vers le domaine média R2 (§6.2 CDCF).
       - NUXT_PUBLIC_MEDIA_BASE_URL=${NUXT_PUBLIC_MEDIA_BASE_URL:-http://localhost:8090/api/files}
-      # Fond de carte MapTiler (§8 Jalon 5) : sans clé, la carte affiche un
-      # message d'erreur explicite au lieu de planter.
-      - NUXT_PUBLIC_MAPTILER_KEY=${NUXT_PUBLIC_MAPTILER_KEY:-}
-      - NUXT_PUBLIC_MAPTILER_STYLE=${NUXT_PUBLIC_MAPTILER_STYLE:-streets-v2}
     ports:
       # 3000 est déjà pris sur l'hôte par un autre projet local -> 3001.
       - "3001:3000"

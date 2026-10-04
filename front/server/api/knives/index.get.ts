@@ -1,17 +1,20 @@
-import PocketBase from 'pocketbase'
-import { sanitizeKnife, type KnifeRecord } from '../../utils/sanitizeKnife'
+import { fetchNumberedKnives } from '../../utils/knives'
+import { summarizeKnife } from '../../utils/sanitizeKnife'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
-  const pb = new PocketBase(config.pocketbaseInternalUrl)
+  const knives = await fetchNumberedKnives(event)
 
-  const records = await pb.collection('knives').getFullList<KnifeRecord>({
-    filter: 'is_public = true',
-    sort: '-created'
-  })
+  // Dernière pièce ajoutée : mise en avant à l'ouverture du rouleau et
+  // étiquetée "Dernière entrée" dans l'aperçu de la liste.
+  const latest = knives.reduce<(typeof knives)[number] | null>(
+    (newest, knife) => !newest || knife.record.created > newest.record.created ? knife : newest,
+    null
+  )
 
   return {
     success: true,
-    data: records.map(record => sanitizeKnife(record, config.public.mediaBaseUrl))
+    data: knives.map(knife => summarizeKnife(knife, config.public.mediaBaseUrl)),
+    latest: latest?.record.slug ?? null
   }
 })

@@ -34,10 +34,6 @@ services:
       - NODE_ENV=production
       - NUXT_POCKETBASE_INTERNAL_URL=http://knife-pocketbase:8090
       - NUXT_PUBLIC_MEDIA_BASE_URL=${NUXT_PUBLIC_MEDIA_BASE_URL:?NUXT_PUBLIC_MEDIA_BASE_URL is required}
-      # Fond de carte MapTiler (§8 Jalon 5) : sans clé, la carte affiche un
-      # message d'erreur explicite au lieu de planter.
-      - NUXT_PUBLIC_MAPTILER_KEY=${NUXT_PUBLIC_MAPTILER_KEY:-}
-      - NUXT_PUBLIC_MAPTILER_STYLE=${NUXT_PUBLIC_MAPTILER_STYLE:-streets-v2}
     depends_on:
       - pocketbase
     networks:
