@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Vignette carrée : le visuel détouré posé en diagonale sur une tuile sombre
-// (comme sur la maquette), sinon la première photo recadrée.
+// Vignette carrée : le visuel détouré (ou, à défaut, la première photo)
+// recadré pour remplir toute la tuile sombre.
 defineProps<{
   cover: string | null
   cutout: string | null
@@ -17,9 +17,9 @@ defineProps<{
       alt=""
       :width="size * 2"
       :height="size * 2"
-      fit="inside"
+      fit="cover"
       loading="lazy"
-      class="absolute inset-0 size-full scale-[1.35] -rotate-[35deg] object-contain"
+      class="absolute inset-0 size-full object-cover"
     />
     <NuxtImg
       v-else-if="cover"
