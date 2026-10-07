@@ -85,9 +85,10 @@ const technicalSpecs = computed(() => [
 
 // Même mise en page pour toutes les fiches : une grande photo, puis une
 // seconde à gauche de la fiche technique. Au-delà de deux photos, les
-// suivantes ne sont pas affichées.
+// suivantes ne sont pas affichées. La première photo sert à la galerie de la
+// page index : elle n'est pas répétée ici.
 const MAX_PHOTOS = 2
-const photos = computed(() => knife.value.photos.slice(0, MAX_PHOTOS))
+const photos = computed(() => knife.value.photos.slice(1, 1 + MAX_PHOTOS))
 // Avec une seule photo, elle va directement à côté de la fiche.
 const widePhoto = computed(() => photos.value.length > 1 ? photos.value[0] : undefined)
 const sidePhoto = computed(() => photos.value.at(-1))
